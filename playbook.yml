@@ -9,7 +9,7 @@
   tasks:
     - name: Copy the script to the server
       ansible.builtin.copy:
-        src: files/{{ script_name }}
+        src: ./{{ script_name }}
         dest: /tmp/files/{{ script_name }}
         mode: '0755'  # Ensure scripts are executable
 
