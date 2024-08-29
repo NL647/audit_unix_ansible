@@ -1,0 +1,39 @@
+---
+- name: Run User-Specified Script on All Hosts and Collect Results
+  hosts: all
+  gather_facts: no
+  vars:
+    script_name: "{{ script_name }}"
+
+
+  tasks:
+    - name: Copy the script to the server
+      ansible.builtin.copy:
+        src: files/{{ script_name }}
+        dest: /tmp/files/{{ script_name }}
+        mode: '0755'  # Ensure scripts are executable
+
+    - name: Execute the selected script and capture output
+      ansible.builtin.shell: /tmp/files/{{ script_name }}
+      register: script_output
+      ignore_errors: yes  # Continue even if the script fails
+      
+    - name: Display echo output
+      ansible.builtin.debug:
+        msg: "{{ script_output.stdout_lines }}"
+      when: script_output.stdout_lines is defined and script_output.stdout_lines | length > 0
+
+    - name: Display errors
+      ansible.builtin.debug:
+        msg: 
+          - "{{ script_output.stderr_lines }}"
+          - "Host: {{ inventory_hostname }}"
+          - "IP: {{ ansible_ssh_host }}"
+          - "stdout: {{ script_output.stdout_lines }}"
+      when: script_output.stderr_lines is defined and script_output.stderr_lines | length > 0
+
+
+    - name: Clean up the scripts folder from the server
+      ansible.builtin.file:
+        path: /tmp/files/
+        state: absent          
