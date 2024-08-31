@@ -7,7 +7,7 @@
   tasks:
     - name: Upload the selected bash script to the host
       copy:
-        src: "{{ script_name }}"
+        src: "./{{ script_name }}"
         dest: "/tmp/{{ script_name }}"
         mode: '0755'
 
