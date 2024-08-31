@@ -27,7 +27,11 @@ else
 fi
 
 # PHP version
-PHP_VERSION=$(php -v | head -n 1 | awk '{print $2}') || PHP_VERSION="N/A"
+if command -v php &> /dev/null; then
+    PHP_VERSION=$(php -v | head -n 1 | awk '{print $2}')
+else
+    PHP_VERSION="N/A"
+fi
 
 # UFW info
 if command -v ufw &> /dev/null; then
