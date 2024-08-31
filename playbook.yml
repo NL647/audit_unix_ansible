@@ -28,6 +28,7 @@
         create: yes
         state: present
       run_once: true
+      delegate_to: localhost
 
     - name: Consolidate CSV files into one on the AWX server
       local_action:
@@ -36,3 +37,4 @@
       with_fileglob:
         - "/tmp/fetched/*.csv"
       run_once: true
+      delegate_to: localhost
