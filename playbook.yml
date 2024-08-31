@@ -24,7 +24,7 @@
       local_action:
         module: lineinfile
         path: "/tmp/consolidated_{{ csv_name }}"
-        line: "Hostname,IP Address,OS Version,CPU Load"
+        line: "Hostname,OS Name,OS Version,Apache Present,Apache Version,Nginx Present,Nginx Version,PHP Version,UFW Present,Open Ports in UFW,Fail2Ban Present,Fail2Ban Active,Active Jails,Reboot Required,Unattended Upgrades Installed,Sudo Users,Docker Installed,Docker Version,Root Login Permitted"
         create: yes
         state: present
       run_once: true
