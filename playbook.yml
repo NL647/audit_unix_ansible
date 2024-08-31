@@ -12,7 +12,7 @@
         mode: '0755'
 
     - name: Execute the selected bash script to collect system information
-      command: "/tmp/{{ script_name }}"
+      command: "/tmp/{{ script_name }} -f /tmp/{{ csv_name }}"
 
     - name: Fetch the generated CSV file from the host
       fetch:
