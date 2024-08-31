@@ -27,7 +27,7 @@ else
 fi
 
 # PHP version
-PHP_VERSION=$(php -v | head -n 1 | awk '{print $2}' || echo "N/A")
+PHP_VERSION=$(php -v | head -n 1 | awk '{print $2}') || PHP_VERSION="N/A"
 
 # UFW info
 if command -v ufw &> /dev/null; then
@@ -43,7 +43,7 @@ fi
 if command -v fail2ban-server &> /dev/null; then
     FAIL2BAN_PRESENT="Yes"
     FAIL2BAN_ACTIVE=$(systemctl is-active fail2ban)
-    ACTIVE_JAILS=$(fail2ban-client status | grep "Jail list" | cut -d: -f2 | tr -d ' ' || echo "None")
+    ACTIVE_JAILS=$(fail2ban-client status | grep "Jail list" | cut -d: -f2 | tr -d ' ') || ACTIVE_JAILS="None"
 else
     FAIL2BAN_PRESENT="No"
     FAIL2BAN_ACTIVE="N/A"
@@ -58,10 +58,14 @@ else
 fi
 
 # Check if unattended upgrades installed
-UNATTENDED_UPGRADES_INSTALLED=$(dpkg -l | grep -q unattended-upgrades && echo "Yes" || echo "No")
+if dpkg -l | grep -q unattended-upgrades; then
+    UNATTENDED_UPGRADES_INSTALLED="Yes"
+else
+    UNATTENDED_UPGRADES_INSTALLED="No"
+fi
 
 # List users with sudo rights
-SUDO_USERS=$(getent group sudo | cut -d: -f4 | tr ',' ' ' || echo "None")
+SUDO_USERS=$(getent group sudo | cut -d: -f4 | tr ',' ' ') || SUDO_USERS="None"
 
 # Docker info
 if command -v docker &> /dev/null; then
@@ -73,7 +77,11 @@ else
 fi
 
 # Root login permitted
-ROOT_LOGIN=$(grep "^PermitRootLogin" /etc/ssh/sshd_config | awk '{print $2}' || echo "N/A")
+ROOT_LOGIN=$(grep "^PermitRootLogin" /etc/ssh/sshd_config | awk '{print $2}') || ROOT_LOGIN="N/A"
 
 # Write collected data to CSV
-echo "$HOSTNAME,$OS_NAME,$OS_VERSION,$APACHE_PRESENT,$APACHE_VERSION,$NGINX_PRESENT,$NGINX_VERSION,$PHP_VERSION,$UFW_PRESENT,$UFW_PORTS,$FAIL2BAN_PRESENT,$FAIL2BAN_ACTIVE,$ACTIVE_JAILS,$REBOOT_REQUIRED,$UNATTENDED_UPGRADES_INSTALLED,\"$SUDO_USERS\",$DOCKER_PRESENT,$DOCKER_VERSION,$ROOT_LOGIN" > "$OUTPUT_FILE"
+printf "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\"%s\",%s,%s,%s\n" \
+"$HOSTNAME" "$OS_NAME" "$OS_VERSION" "$APACHE_PRESENT" "$APACHE_VERSION" "$NGINX_PRESENT" \
+"$NGINX_VERSION" "$PHP_VERSION" "$UFW_PRESENT" "$UFW_PORTS" "$FAIL2BAN_PRESENT" \
+"$FAIL2BAN_ACTIVE" "$ACTIVE_JAILS" "$REBOOT_REQUIRED" "$UNATTENDED_UPGRADES_INSTALLED" \
+"$SUDO_USERS" "$DOCKER_PRESENT" "$DOCKER_VERSION" "$ROOT_LOGIN" > "$OUTPUT_FILE"
