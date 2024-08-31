@@ -15,6 +15,14 @@
     - name: Execute the selected bash script to collect system information
       ansible.builtin.command: "/tmp/{{ script_name }} -f /tmp/{{ csv_name }}"
 
+    - name: Ensure the fetched directory exists on AWX server
+      ansible.builtin.file:
+        path: "/tmp/fetched/"
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+      run_once: true
+
     - name: Fetch the generated CSV file from the host
       ansible.builtin.fetch:
         src: "/tmp/{{ csv_name }}"
