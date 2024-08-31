@@ -54,7 +54,7 @@
 
 
     - name: List files in the fetched directory
-      ansible.builtin.shell: "ls -l /tmp/ && pwd && ls -l ../"
+      ansible.builtin.shell: "ls -l /tmp/ && pwd && ls -l ../../../"
       register: fetched_files
       delegate_to: localhost
       run_once: true
