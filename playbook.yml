@@ -15,18 +15,11 @@
     - name: Execute the selected bash script to collect system information
       ansible.builtin.command: "/tmp/{{ script_name }} -f /tmp/{{ csv_name }}"
 
-    - name: Ensure the fetched directory exists on AWX server
-      ansible.builtin.file:
-        path: "/tmp/fetched/"
-        state: directory
-        mode: '0755'
-      delegate_to: localhost
-      run_once: true
 
     - name: Fetch the generated CSV file from the host
       ansible.builtin.fetch:
         src: "/tmp/{{ csv_name }}"
-        dest: "/tmp/fetched/"
+        dest: "/tmp/"
         flat: yes
 
     - name: Ensure consolidated CSV exists on AWX server
@@ -47,9 +40,9 @@
       delegate_to: localhost
 
     - name: Append fetched CSV data to the consolidated CSV on AWX server
-      ansible.builtin.shell: "cat /tmp/fetched/{{ csv_name }} >> {{ consolidated_csv }}"
+      ansible.builtin.shell: "cat /tmp/{{ csv_name }} >> {{ consolidated_csv }}"
       with_fileglob:
-        - "/tmp/fetched/*.csv"
+        - "/tmp/*.csv"
       run_once: true
       delegate_to: localhost
 
