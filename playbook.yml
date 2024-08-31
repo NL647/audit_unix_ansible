@@ -52,7 +52,14 @@
       delegate_to: localhost
       run_once: true
 
-    - name: Display the result in AWX
-      ansible.builtin.debug:
-        var: csv_output.stdout
+
+    - name: List files in the fetched directory
+      ansible.builtin.shell: "ls -l /tmp/"
+      register: fetched_files
+      delegate_to: localhost
       run_once: true
+    
+    - name: Display fetched files
+      ansible.builtin.debug:
+        var: fetched_files.stdout_lines
+      run_once: true      
