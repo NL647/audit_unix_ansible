@@ -3,8 +3,9 @@
   hosts: all
   become: yes
   vars:
-    csv_name: "{{ script_name | regex_replace('\\.sh$', '') }}.csv"
-    consolidated_csv: "/tmp/consolidated_{{ csv_name }}"
+    timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
+    csv_name: "{{ script_name | regex_replace('\\.sh$', '') }}_{{ timestamp }}.csv"
+    consolidated_csv: "/tmp/consolidated_{{ script_name | regex_replace('\\.sh$', '') }}_{{ timestamp }}.csv"
   tasks:
     - name: Upload the selected bash script to the host
       ansible.builtin.copy:
@@ -14,7 +15,6 @@
 
     - name: Execute the selected bash script to collect system information
       ansible.builtin.command: "/tmp/{{ script_name }} -f /tmp/{{ csv_name }}"
-
 
     - name: Fetch the generated CSV file from the host
       ansible.builtin.fetch:
@@ -52,9 +52,8 @@
       delegate_to: localhost
       run_once: true
 
-
     - name: List files in the fetched directory
-      ansible.builtin.shell: "ls -l /tmp/ && pwd && ls -l ../../../ && ls /home/"
+      ansible.builtin.shell: "ls -l /tmp/"
       register: fetched_files
       delegate_to: localhost
       run_once: true
@@ -62,4 +61,4 @@
     - name: Display fetched files
       ansible.builtin.debug:
         var: fetched_files.stdout_lines
-      run_once: true      
+      run_once: true
