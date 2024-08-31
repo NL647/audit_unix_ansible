@@ -5,7 +5,7 @@
   vars:
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
     csv_name: "{{ script_name | regex_replace('\\.sh$', '') }}_{{ timestamp }}.csv"
-    consolidated_csv: "/tmp/consolidated_{{ script_name | regex_replace('\\.sh$', '') }}_{{ timestamp }}.csv"
+    local_csv: "/tmp/{{ csv_name }}"
   tasks:
     - name: Upload the selected bash script to the host
       ansible.builtin.copy:
@@ -22,32 +22,30 @@
         dest: "/tmp/"
         flat: yes
 
-    - name: Ensure consolidated CSV exists on AWX server
+    - name: Ensure local CSV file exists
       ansible.builtin.file:
-        path: "{{ consolidated_csv }}"
+        path: "{{ local_csv }}"
         state: touch
       run_once: true
       delegate_to: localhost
 
-    - name: Write header to consolidated CSV on AWX server if empty
+    - name: Write header to local CSV file if empty
       ansible.builtin.shell: |
-        if [ ! -s "{{ consolidated_csv }}" ]; then
-          echo "Hostname,OS Name,OS Version,Apache Present,Apache Version,Nginx Present,Nginx Version,PHP Version,UFW Present,Open Ports in UFW,Fail2Ban Present,Fail2Ban Active,Active Jails,Reboot Required,Unattended Upgrades Installed,Sudo Users,Docker Installed,Docker Version,Root Login Permitted" > "{{ consolidated_csv }}"
+        if [ ! -s "{{ local_csv }}" ]; then
+          echo "Hostname,OS Name,OS Version,Apache Present,Apache Version,Nginx Present,Nginx Version,PHP Version,UFW Present,Open Ports in UFW,Fail2Ban Present,Fail2Ban Active,Active Jails,Reboot Required,Unattended Upgrades Installed,Sudo Users,Docker Installed,Docker Version,Root Login Permitted" > "{{ local_csv }}"
         fi
       args:
         executable: /bin/bash
       run_once: true
       delegate_to: localhost
 
-    - name: Append fetched CSV data to the consolidated CSV on AWX server
-      ansible.builtin.shell: "cat /tmp/{{ csv_name }} >> {{ consolidated_csv }}"
-      with_fileglob:
-        - "/tmp/*.csv"
+    - name: Append fetched CSV data to the local CSV file
+      ansible.builtin.shell: "cat /tmp/{{ csv_name }} >> {{ local_csv }}"
       run_once: true
       delegate_to: localhost
 
-    - name: Display the consolidated CSV content
-      ansible.builtin.command: "cat {{ consolidated_csv }}"
+    - name: Display the local CSV content
+      ansible.builtin.command: "cat {{ local_csv }}"
       register: csv_output
       delegate_to: localhost
       run_once: true
