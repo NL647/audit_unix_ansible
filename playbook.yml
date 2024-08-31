@@ -4,37 +4,54 @@
   become: yes
   vars:
     csv_name: "{{ script_name | regex_replace('\\.sh$', '') }}.csv"
+    consolidated_csv: "/tmp/consolidated_{{ csv_name }}"
   tasks:
     - name: Upload the selected bash script to the host
-      copy:
+      ansible.builtin.copy:
         src: "./{{ script_name }}"
         dest: "/tmp/{{ script_name }}"
         mode: '0755'
 
     - name: Execute the selected bash script to collect system information
-      command: "/tmp/{{ script_name }} -f /tmp/{{ csv_name }}"
+      ansible.builtin.command: "/tmp/{{ script_name }} -f /tmp/{{ csv_name }}"
 
     - name: Fetch the generated CSV file from the host
-      fetch:
+      ansible.builtin.fetch:
         src: "/tmp/{{ csv_name }}"
         dest: "/tmp/fetched/"
         flat: yes
 
-    - name: Write header to consolidated CSV on AWX server
-      local_action:
-        module: lineinfile
-        path: "/tmp/consolidated_{{ csv_name }}"
-        line: "Hostname,OS Name,OS Version,Apache Present,Apache Version,Nginx Present,Nginx Version,PHP Version,UFW Present,Open Ports in UFW,Fail2Ban Present,Fail2Ban Active,Active Jails,Reboot Required,Unattended Upgrades Installed,Sudo Users,Docker Installed,Docker Version,Root Login Permitted"
-        create: yes
-        state: present
+    - name: Ensure consolidated CSV exists on AWX server
+      ansible.builtin.file:
+        path: "{{ consolidated_csv }}"
+        state: touch
       run_once: true
       delegate_to: localhost
 
-    - name: Consolidate CSV files into one on the AWX server
-      local_action:
-        module: shell
-        cmd: "cat /tmp/fetched/{{ csv_name }} >> /tmp/consolidated_{{ csv_name }}"
+    - name: Write header to consolidated CSV on AWX server if empty
+      ansible.builtin.shell: |
+        if [ ! -s "{{ consolidated_csv }}" ]; then
+          echo "Hostname,OS Name,OS Version,Apache Present,Apache Version,Nginx Present,Nginx Version,PHP Version,UFW Present,Open Ports in UFW,Fail2Ban Present,Fail2Ban Active,Active Jails,Reboot Required,Unattended Upgrades Installed,Sudo Users,Docker Installed,Docker Version,Root Login Permitted" > "{{ consolidated_csv }}"
+        fi
+      args:
+        executable: /bin/bash
+      run_once: true
+      delegate_to: localhost
+
+    - name: Append fetched CSV data to the consolidated CSV on AWX server
+      ansible.builtin.shell: "cat /tmp/fetched/{{ csv_name }} >> {{ consolidated_csv }}"
       with_fileglob:
         - "/tmp/fetched/*.csv"
       run_once: true
       delegate_to: localhost
+
+    - name: Display the consolidated CSV content
+      ansible.builtin.command: "cat {{ consolidated_csv }}"
+      register: csv_output
+      delegate_to: localhost
+      run_once: true
+
+    - name: Display the result in AWX
+      ansible.builtin.debug:
+        var: csv_output.stdout
+      run_once: true
