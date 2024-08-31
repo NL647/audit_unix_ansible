@@ -23,7 +23,7 @@
     - name: Write header to consolidated CSV on AWX server
       local_action:
         module: lineinfile
-        path: "/tmp/consolidated_{{ csv_name }}"
+        path: "/home/results/consolidated_{{ csv_name }}"
         line: "Hostname,OS Name,OS Version,Apache Present,Apache Version,Nginx Present,Nginx Version,PHP Version,UFW Present,Open Ports in UFW,Fail2Ban Present,Fail2Ban Active,Active Jails,Reboot Required,Unattended Upgrades Installed,Sudo Users,Docker Installed,Docker Version,Root Login Permitted"
         create: yes
         state: present
@@ -32,7 +32,7 @@
     - name: Consolidate CSV files into one on the AWX server
       local_action:
         module: shell
-        cmd: "cat /tmp/fetched/{{ csv_name }} >> /tmp/consolidated_{{ csv_name }}"
+        cmd: "cat /tmp/fetched/{{ csv_name }} >> /home/results/consolidated_{{ csv_name }}"
       with_fileglob:
         - "/tmp/fetched/*.csv"
       run_once: true
