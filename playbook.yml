@@ -14,7 +14,13 @@
         mode: '0755'
 
     - name: Execute the selected bash script to collect system information
-      ansible.builtin.command: "/tmp/{{ script_name }} -f /tmp/{{ csv_name }}"
+      ansible.builtin.command: 
+        cmd: "/tmp/{{ script_name }} -f /tmp/{{ csv_name }}"
+      register: script_output
+
+    - name: Debug script execution output
+      ansible.builtin.debug:
+        var: script_output.stdout_lines
 
     - name: Ensure the CSV file was generated on the remote host
       ansible.builtin.stat:
