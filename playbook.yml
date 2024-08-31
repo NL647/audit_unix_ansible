@@ -54,7 +54,7 @@
 
 
     - name: List files in the fetched directory
-      ansible.builtin.shell: "ls -l /tmp/"
+      ansible.builtin.shell: "ls -l /tmp/ && hostname"
       register: fetched_files
       delegate_to: localhost
       run_once: true
