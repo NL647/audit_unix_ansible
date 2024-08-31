@@ -1,39 +1,38 @@
 ---
-- name: Run User-Specified Script on All Hosts and Collect Results
+- name: Collect and gather system information from Linux servers
   hosts: all
-  gather_facts: no
+  become: yes
   vars:
-    script_name: "{{ script_name }}"
-
-
+    csv_name: "{{ script_name | regex_replace('\\.sh$', '') }}.csv"
   tasks:
-    - name: Copy the script to the server
-      ansible.builtin.copy:
-        src: ./{{ script_name }}
-        dest: /tmp/files/{{ script_name }}
-        mode: '0755'  # Ensure scripts are executable
+    - name: Upload the selected bash script to the host
+      copy:
+        src: "{{ script_name }}"
+        dest: "/tmp/{{ script_name }}"
+        mode: '0755'
 
-    - name: Execute the selected script and capture output
-      ansible.builtin.shell: /tmp/files/{{ script_name }}
-      register: script_output
-      ignore_errors: yes  # Continue even if the script fails
-      
-    - name: Display echo output
-      ansible.builtin.debug:
-        msg: "{{ script_output.stdout_lines }}"
-      when: script_output.stdout_lines is defined and script_output.stdout_lines | length > 0
+    - name: Execute the selected bash script to collect system information
+      command: "/tmp/{{ script_name }}"
 
-    - name: Display errors
-      ansible.builtin.debug:
-        msg: 
-          - "{{ script_output.stderr_lines }}"
-          - "Host: {{ inventory_hostname }}"
-          - "IP: {{ ansible_ssh_host }}"
-          - "stdout: {{ script_output.stdout_lines }}"
-      when: script_output.stderr_lines is defined and script_output.stderr_lines | length > 0
+    - name: Fetch the generated CSV file from the host
+      fetch:
+        src: "/tmp/{{ csv_name }}"
+        dest: "/tmp/fetched/"
+        flat: yes
 
+    - name: Write header to consolidated CSV on AWX server
+      local_action:
+        module: lineinfile
+        path: "/tmp/consolidated_{{ csv_name }}"
+        line: "Hostname,IP Address,OS Version,CPU Load"
+        create: yes
+        state: present
+      run_once: true
 
-    - name: Clean up the scripts folder from the server
-      ansible.builtin.file:
-        path: /tmp/files/
-        state: absent          
+    - name: Consolidate CSV files into one on the AWX server
+      local_action:
+        module: shell
+        cmd: "cat /tmp/fetched/{{ csv_name }} >> /tmp/consolidated_{{ csv_name }}"
+      with_fileglob:
+        - "/tmp/fetched/*.csv"
+      run_once: true
