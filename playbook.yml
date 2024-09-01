@@ -1,6 +1,7 @@
 ---
 - name: Collect and gather system information from Linux servers
   hosts: all
+  gather_facts: yes
   become: yes
   vars:
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
