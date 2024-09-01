@@ -4,7 +4,7 @@
   gather_facts: yes
   become: yes
   vars:
-    timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
+    timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M') }}"
     csv_name: "{{ script_name | regex_replace('\\.sh$', '') }}_{{ timestamp }}.csv"
     local_csv: "/tmp/{{ csv_name }}"
   tasks:
