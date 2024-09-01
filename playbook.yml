@@ -4,9 +4,10 @@
   gather_facts: yes
   become: yes
   vars:
-    timestamp: "{{ lookup('pipe', 'date +%Y%m%d') }}"
-    csv_name: "{{ script_name | regex_replace('\\.sh$', '') }}_{{ timestamp }}.csv"
-    local_csv: "/tmp/{{ csv_name }}"
+    job_id: "{{ ansible_job_id | default('manual_job') }}"
+    timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M') }}"
+    csv_name: "audit_{{ job_id }}.csv"
+    local_csv: "/tmp/final_audit_{{ timestamp }}_{{ job_id }}.csv"
   tasks:
     - name: Upload the selected bash script to the host
       ansible.builtin.copy:
@@ -43,7 +44,6 @@
       ansible.builtin.file:
         path: "{{ local_csv }}"
         state: touch
-      run_once: true
       delegate_to: localhost
 
     - name: Write header to local CSV file if empty
@@ -53,12 +53,10 @@
         fi
       args:
         executable: /bin/bash
-      run_once: true
       delegate_to: localhost
 
     - name: Append fetched CSV data to the local CSV file
       ansible.builtin.shell: "cat /tmp/{{ inventory_hostname }}/{{ csv_name }} >> {{ local_csv }}"
-      run_once: true
       delegate_to: localhost
 
     - name: Display the local CSV content
@@ -82,4 +80,3 @@
         path: "/tmp/{{ inventory_hostname }}/{{ csv_name }}"
         state: absent
       delegate_to: localhost
-      run_once: true
