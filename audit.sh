@@ -53,7 +53,7 @@ fi
 # UFW info
 if command -v ufw &> /dev/null; then
     UFW_PRESENT="Yes"
-    UFW_PORTS=$(ufw status | grep -i 'open' | awk '{print $1}' | paste -sd "," -)
+    UFW_PORTS=$(ufw status | grep -i 'open' | awk '{print $1}' | paste -sd "--" -)
     [[ -z "$UFW_PORTS" ]] && UFW_PORTS="None"
 else
     UFW_PRESENT="No"
@@ -100,9 +100,16 @@ fi
 # Root login permitted
 ROOT_LOGIN=$(grep "^PermitRootLogin" /etc/ssh/sshd_config | awk '{print $2}') || ROOT_LOGIN="N/A"
 
+# Check for CIS Hardening file
+if [ -f /etc/default/cis-hardening ]; then
+    CIS_HARDENING="Present"
+else
+    CIS_HARDENING="Absent"
+fi
+
 # Write collected data to CSV
-printf "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\"%s\",%s,%s,%s\n" \
+printf "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\"%s\",%s,%s,%s,%s\n" \
 "$HOSTNAME" "$OS_NAME" "$OS_VERSION" "$APACHE_PRESENT" "$APACHE_VERSION" "$NGINX_PRESENT" \
 "$NGINX_VERSION" "$PHP_VERSION" "$UFW_PRESENT" "$UFW_PORTS" "$FAIL2BAN_PRESENT" \
 "$FAIL2BAN_ACTIVE" "$ACTIVE_JAILS" "$REBOOT_REQUIRED" "$UNATTENDED_UPGRADES_INSTALLED" \
-"$SUDO_USERS" "$DOCKER_PRESENT" "$DOCKER_VERSION" "$ROOT_LOGIN" > "$OUTPUT_FILE"
+"$SUDO_USERS" "$DOCKER_PRESENT" "$DOCKER_VERSION" "$ROOT_LOGIN" "$CIS_HARDENING" > "$OUTPUT_FILE"
