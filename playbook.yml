@@ -3,8 +3,9 @@
   hosts: all
   become: yes
   vars:
-    csv_name: "{{ script_name | regex_replace('\\.sh$', '') }}.csv"
-    consolidated_csv: "/tmp/consolidated_{{ csv_name }}"
+    timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
+    csv_name: "{{ script_name | regex_replace('\\.sh$', '') }}_{{ timestamp }}.csv"
+    local_csv: "/tmp/{{ csv_name }}"
   tasks:
     - name: Upload the selected bash script to the host
       ansible.builtin.copy:
@@ -13,53 +14,71 @@
         mode: '0755'
 
     - name: Execute the selected bash script to collect system information
-      ansible.builtin.command: "/tmp/{{ script_name }} -f /tmp/{{ csv_name }}"
+      ansible.builtin.shell:
+        cmd: "/tmp/{{ script_name }} -f /tmp/{{ csv_name }}"
+      register: script_output
 
+    - name: Debug script execution output
+      ansible.builtin.debug:
+        var: script_output.stdout_lines
+
+    - name: Ensure the CSV file was generated on the remote host
+      ansible.builtin.stat:
+        path: "/tmp/{{ csv_name }}"
+      register: csv_stat
+
+    - name: Fail if the CSV file does not exist on the remote host
+      ansible.builtin.fail:
+        msg: "The CSV file /tmp/{{ csv_name }} does not exist on the remote host {{ inventory_hostname }}."
+      when: not csv_stat.stat.exists
 
     - name: Fetch the generated CSV file from the host
       ansible.builtin.fetch:
         src: "/tmp/{{ csv_name }}"
-        dest: "/tmp/"
+        dest: "/tmp/{{ inventory_hostname }}/"
         flat: yes
 
-    - name: Ensure consolidated CSV exists on AWX server
+    - name: Ensure local CSV file exists
       ansible.builtin.file:
-        path: "{{ consolidated_csv }}"
+        path: "{{ local_csv }}"
         state: touch
       run_once: true
       delegate_to: localhost
 
-    - name: Write header to consolidated CSV on AWX server if empty
+    - name: Write header to local CSV file if empty
       ansible.builtin.shell: |
-        if [ ! -s "{{ consolidated_csv }}" ]; then
-          echo "Hostname,OS Name,OS Version,Apache Present,Apache Version,Nginx Present,Nginx Version,PHP Version,UFW Present,Open Ports in UFW,Fail2Ban Present,Fail2Ban Active,Active Jails,Reboot Required,Unattended Upgrades Installed,Sudo Users,Docker Installed,Docker Version,Root Login Permitted" > "{{ consolidated_csv }}"
+        if [ ! -s "{{ local_csv }}" ]; then
+          echo "Hostname,OS Name,OS Version,Apache Present,Apache Version,Nginx Present,Nginx Version,PHP Version,UFW Present,Open Ports in UFW,Fail2Ban Present,Fail2Ban Active,Active Jails,Reboot Required,Unattended Upgrades Installed,Sudo Users,Docker Installed,Docker Version,Root Login Permitted" > "{{ local_csv }}"
         fi
       args:
         executable: /bin/bash
       run_once: true
       delegate_to: localhost
 
-    - name: Append fetched CSV data to the consolidated CSV on AWX server
-      ansible.builtin.shell: "cat /tmp/{{ csv_name }} >> {{ consolidated_csv }}"
-      with_fileglob:
-        - "/tmp/*.csv"
+    - name: Append fetched CSV data to the local CSV file
+      ansible.builtin.shell: "cat /tmp/{{ inventory_hostname }}/{{ csv_name }} >> {{ local_csv }}"
       run_once: true
       delegate_to: localhost
 
-    - name: Display the consolidated CSV content
-      ansible.builtin.command: "cat {{ consolidated_csv }}"
+    - name: Display the local CSV content
+      ansible.builtin.command: "cat {{ local_csv }}"
       register: csv_output
       delegate_to: localhost
       run_once: true
 
-
-    - name: List files in the fetched directory
-      ansible.builtin.shell: "ls -l /tmp/ && pwd && ls -l ../../../ && ls /home/"
-      register: fetched_files
-      delegate_to: localhost
-      run_once: true
-    
     - name: Display fetched files
       ansible.builtin.debug:
-        var: fetched_files.stdout_lines
-      run_once: true      
+        var: csv_output.stdout_lines
+      run_once: true
+
+    - name: Clean up remote CSV files
+      ansible.builtin.file:
+        path: "/tmp/{{ csv_name }}"
+        state: absent
+
+    - name: Clean up local fetched CSV files
+      ansible.builtin.file:
+        path: "/tmp/{{ inventory_hostname }}/{{ csv_name }}"
+        state: absent
+      delegate_to: localhost
+      run_once: true
