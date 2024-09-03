@@ -24,6 +24,7 @@ fi
 HOSTNAME=$(hostname)
 OS_NAME=$(lsb_release -si)
 OS_VERSION=$(lsb_release -sr)
+IP=$(hostname -I)
 
 # Apache info
 if command -v apache2 &> /dev/null; then
@@ -53,7 +54,7 @@ fi
 # UFW info
 if command -v ufw &> /dev/null; then
     UFW_PRESENT="Yes"
-    UFW_PORTS=$(ufw status | grep -i 'open' | awk '{print $1}' | paste -sd "--" -)
+    UFW_PORTS=$(ufw status | grep -i 'allow' | awk '{print $1}' | paste -sd "--" -)
     [[ -z "$UFW_PORTS" ]] && UFW_PORTS="None"
 else
     UFW_PRESENT="No"
@@ -64,7 +65,7 @@ fi
 if command -v fail2ban-server &> /dev/null; then
     FAIL2BAN_PRESENT="Yes"
     FAIL2BAN_ACTIVE=$(systemctl is-active fail2ban)
-    ACTIVE_JAILS=$(fail2ban-client status | grep "Jail list" | cut -d: -f2 | tr -d ' ') || ACTIVE_JAILS="None"
+    ACTIVE_JAILS=$(fail2ban-client status | grep "Jail list" | cut -d: -f2 | tr -d ' ' tr  ',' '__') || ACTIVE_JAILS="None"
 else
     FAIL2BAN_PRESENT="No"
     FAIL2BAN_ACTIVE="N/A"
@@ -108,8 +109,8 @@ else
 fi
 
 # Write collected data to CSV
-printf "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\"%s\",%s,%s,%s,%s\n" \
-"$HOSTNAME" "$OS_NAME" "$OS_VERSION" "$APACHE_PRESENT" "$APACHE_VERSION" "$NGINX_PRESENT" \
+printf "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,\"%s\",%s,%s,%s,%s\n" \
+"$HOSTNAME" "$IP" "$OS_NAME" "$OS_VERSION" "$APACHE_PRESENT" "$APACHE_VERSION" "$NGINX_PRESENT" \
 "$NGINX_VERSION" "$PHP_VERSION" "$UFW_PRESENT" "$UFW_PORTS" "$FAIL2BAN_PRESENT" \
 "$FAIL2BAN_ACTIVE" "$ACTIVE_JAILS" "$REBOOT_REQUIRED" "$UNATTENDED_UPGRADES_INSTALLED" \
 "$SUDO_USERS" "$DOCKER_PRESENT" "$DOCKER_VERSION" "$ROOT_LOGIN" "$CIS_HARDENING" > "$OUTPUT_FILE"
