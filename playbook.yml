@@ -4,7 +4,7 @@
   gather_facts: yes
   become: yes
   vars:
-    job_id: "{{ ansible_job_id | default('manual_job') }}"
+    job_id: "{{ ansible_job_id | default('job') }}"
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M') }}"
     csv_name: "audit_{{ job_id }}.csv"
     local_csv: "/tmp/final_audit_{{ timestamp }}_{{ job_id }}.csv"
@@ -37,7 +37,7 @@
     - name: Fetch the generated CSV file from the host
       ansible.builtin.fetch:
         src: "/tmp/{{ csv_name }}"
-        dest: "/tmp/{{ inventory_hostname }}/"
+        dest: "/tmp/collect/{{ inventory_hostname }}/"
         flat: yes
 
     - name: Ensure local CSV file exists
@@ -56,7 +56,7 @@
       delegate_to: localhost
 
     - name: Append fetched CSV data to the local CSV file
-      ansible.builtin.shell: "cat /tmp/{{ inventory_hostname }}/{{ csv_name }} >> {{ local_csv }}"
+      ansible.builtin.shell: "cat /tmp/collect/{{ inventory_hostname }}/{{ csv_name }} >> {{ local_csv }}"
       delegate_to: localhost
 
     - name: Display the local CSV content
@@ -77,6 +77,6 @@
 
     - name: Clean up local fetched CSV files
       ansible.builtin.file:
-        path: "/tmp/{{ inventory_hostname }}/{{ csv_name }}"
+        path: "/tmp/collect/*"
         state: absent
       delegate_to: localhost
