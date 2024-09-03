@@ -49,7 +49,7 @@
     - name: Write header to local CSV file if empty
       ansible.builtin.shell: |
         if [ ! -s "{{ local_csv }}" ]; then
-          echo "Hostname,OS Name,OS Version,Apache Present,Apache Version,Nginx Present,Nginx Version,PHP Version,UFW Present,Open Ports in UFW,Fail2Ban Present,Fail2Ban Active,Active Jails,Reboot Required,Unattended Upgrades Installed,Sudo Users,Docker Installed,Docker Version,Root Login Permitted" > "{{ local_csv }}"
+          echo "Hostname,IP,OS Name,OS Version,Apache Present,Apache Version,Nginx Present,Nginx Version,PHP Version,UFW Present,Open Ports in UFW,Fail2Ban Present,Fail2Ban Active,Active Jails,Reboot Required,Unattended Upgrades Installed,Sudo Users,Docker Installed,Docker Version,Root Login Permitted,HARDENING" > "{{ local_csv }}"
         fi
       args:
         executable: /bin/bash
