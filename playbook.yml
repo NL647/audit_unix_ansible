@@ -78,6 +78,6 @@
     - name: Clean up local fetched CSV files
       ansible.builtin.file:
         path: "/tmp/collect/"
-        recurse: True
+        recurse: true
         state: absent
       delegate_to: localhost
