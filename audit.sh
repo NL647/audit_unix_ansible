@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Function to display usage
 usage() {
     printf "Usage: %s -f output_filename.csv\n" "$(basename "$0")"
