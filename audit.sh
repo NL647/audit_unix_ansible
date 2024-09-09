@@ -64,7 +64,7 @@ fi
 if command -v fail2ban-server &> /dev/null; then
     FAIL2BAN_PRESENT="Yes"
     FAIL2BAN_ACTIVE=$(systemctl is-active fail2ban)
-    ACTIVE_JAILS=$(fail2ban-client status | grep "Jail list" | cut -d: -f2 | tr -d ' ' tr  ',' '__') || ACTIVE_JAILS="None"
+    ACTIVE_JAILS=$(JAILS=`fail2ban-client status | grep "Jail list" | sed -E 's/^[^:]+:[ \t]+//' | sed 's/,//g'`) || ACTIVE_JAILS="None"
 else
     FAIL2BAN_PRESENT="No"
     FAIL2BAN_ACTIVE="N/A"
